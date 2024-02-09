@@ -74,22 +74,83 @@ ORDER BY SUM(total_day_supply) DESC;
 
  /*4. 
     a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.*/
+	
+SELECT drug_name,
+ CASE WHEN opioid_drug_flag = 'Y' THEN 'opioid'
+	  WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+	  ELSE 'neither'
+ END AS drug_type
+FROM drug
+GROUP BY 1,2
+ORDER BY drug_type;
+
 
      /*b. Building off of the query you wrote for part a, determine whether more was spent (total_drug_cost) on opioids or on antibiotics. Hint: Format the total costs as MONEY for easier comparision.*/
 
+SELECT CAST(SUM(total_drug_cost) AS MONEY) AS total_cost,
+ CASE WHEN opioid_drug_flag = 'Y' THEN 'opioid'
+	  WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+	  ELSE 'neither'
+ END AS drug_type
+FROM drug
+INNER JOIN prescription AS p
+USING(drug_name)
+GROUP BY 2
+ORDER BY total_cost;
+--answer: More money has been spent on opioids than antibiotics. 
+
+
  /*5. 
     a. How many CBSAs are in Tennessee? **Warning:** The cbsa table contains information for all states, not just Tennessee.*/
+SELECT *
+FROM cbsa
+WHERE cbsaname LIKE '%TN%' 
+ORDER BY cbsa
+
+
+SELECT cbsa, cbsaname
+FROM cbsa
+WHERE cbsaname LIKE '%TN%' 
+GROUP BY cbsa, cbsaname
+ORDER BY cbsa;
+--answer: there are 10 cbsa in Tennessee
 
      /*b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population.*/
+	 
+	 SELECT cbsa, cbsaname, SUM(population) AS total_population
+FROM cbsa
+INNER JOIN population as p
+USING(fipscounty)
+WHERE cbsaname LIKE '%TN%' 
+GROUP BY 1, 2
+ORDER BY 3;
+--answer: cbsa 34100 has the lowest population with 116,352 and cbsa 34980 has the highest population with 1,830,410
 
      /*c. What is the largest (in terms of population) county which is not included in a CBSA? Report the county name and population.*/
 
  /*6. 
     a. Find all rows in the prescription table where total_claims is at least 3000. Report the drug_name and the total_claim_count.*/
+	SELECT drug_name, total_claim_count
+	FROM prescription
+	WHERE total_claim_count > 3000
+	
 
     /* b. For each instance that you found in part a, add a column that indicates whether the drug is an opioid.*/
+SELECT drug_name, total_claim_count, opioid_drug_flag
+	FROM prescription
+	INNER JOIN drug
+	USING(drug_name)
+	WHERE total_claim_count > 3000
 
      /*c. Add another column to you answer from the previous part which gives the prescriber first and last name associated with each row.*/
+SELECT drug_name, total_claim_count, opioid_drug_flag, nppes_provider_last_org_name, nppes_provider_first_name
+	FROM prescription
+	INNER JOIN drug
+	USING(drug_name)
+	INNER JOIN prescriber
+	USING(npi)
+	WHERE total_claim_count > 3000
+
 
  /*7. The goal of this exercise is to generate a full list of all pain management specialists in Nashville and the number of claims they had for each opioid. **Hint:** The results from all 3 parts will have 637 rows.*/
 
